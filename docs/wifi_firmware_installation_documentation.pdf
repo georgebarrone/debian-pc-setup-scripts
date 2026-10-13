@@ -1,0 +1,265 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+4 0 obj
+<< /Length 2279 >>
+stream
+BT
+/F1 8 Tf
+11 TL
+35 752 Td
+( Wi-Fi Firmware - Installation Guide) Tj
+T*
+( Post-install wireless setup for Dell PCs running Debian-based Raspberry Pi Desktop.) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( Overview) Tj
+T*
+( The install-wifi-firmware.sh script detects many PCI/PCIe and identifiable USB Wi-Fi adapters, selects an) Tj
+T*
+( appropriate Debian firmware package, installs it using APT, and checks for a wireless network interface.) Tj
+T*
+( It uses the computer's actual hardware IDs. It does not require Raspberry Pi hardware or create a Wi-Fi) Tj
+T*
+( connection for you.) Tj
+T*
+() Tj
+T*
+( Requirements) Tj
+T*
+( An APT-based Debian system; Bash; sudo/root access for installation; and a temporary internet connection) Tj
+T*
+( through Ethernet or USB tethering. Firmware availability depends on the Debian release and configured) Tj
+T*
+( repositories.) Tj
+T*
+() Tj
+T*
+(    Before installing: Connect Ethernet or USB tethering. Without working internet access, the installer cannot download) Tj
+T*
+(    firmware packages.) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( 1. Install firmware) Tj
+T*
+() Tj
+T*
+(    sudo bash install-wifi-firmware.sh) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( The script prints detected Wi-Fi devices and suggested packages, refreshes APT package lists, installs available) Tj
+T*
+( firmware, and checks whether a wireless interface is present. Reboot after installation:) Tj
+T*
+() Tj
+T*
+(    sudo reboot) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( 2. Diagnose first \(no changes\)) Tj
+T*
+() Tj
+T*
+(    bash install-wifi-firmware.sh --diagnose) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( Displays adapter IDs, any wireless interfaces already found, and suggested firmware packages. This mode does) Tj
+T*
+( not install packages or modify repositories.) Tj
+T*
+() Tj
+T*
+( 3. Installer options) Tj
+T*
+(   Command                          Purpose) Tj
+T*
+() Tj
+T*
+(   --diagnose                       Hardware scan only; no changes.) Tj
+T*
+() Tj
+T*
+(   --no-repo                        Install using existing APT sources only; do not add a firmware repository.) Tj
+T*
+() Tj
+T*
+(   --help                           Display built-in usage instructions.) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Wi-Fi Firmware | Debian / Raspberry Pi Desktop on Dell PC                                                             1/2) Tj
+T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+6 0 obj
+<< /Length 2719 >>
+stream
+BT
+/F1 8 Tf
+11 TL
+35 752 Td
+( Hardware Support & Troubleshooting) Tj
+T*
+( What the installer recognizes, changes, and how to investigate failures.) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( 4. Firmware matching) Tj
+T*
+( Packages are suggested by detected chipset vendor, not guaranteed exact-card compatibility. The script) Tj
+T*
+( handles common Intel, Realtek, Broadcom, Atheros/Qualcomm, MediaTek, and Marvell IDs. Depending on the) Tj
+T*
+( Debian release, it may suggest:) Tj
+T*
+() Tj
+T*
+(   Vendor                                        Common package) Tj
+T*
+() Tj
+T*
+(   Intel                                         firmware-iwlwifi) Tj
+T*
+() Tj
+T*
+(   Realtek                                       firmware-realtek) Tj
+T*
+() Tj
+T*
+(   Broadcom                                      firmware-brcm80211) Tj
+T*
+() Tj
+T*
+(   Qualcomm / Atheros                            firmware-atheros) Tj
+T*
+() Tj
+T*
+(   MediaTek                                      firmware-mediatek or firmware-misc-nonfree) Tj
+T*
+() Tj
+T*
+(   Marvell                                       firmware-libertas) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( 5. Repository behavior) Tj
+T*
+( If a required firmware package is unavailable, the installer may add an official Debian non-free-firmware) Tj
+T*
+( source on systems identified as Debian 12 \(bookworm\) or Debian 13 \(trixie\). The source is written to:) Tj
+T*
+() Tj
+T*
+(    /etc/apt/sources.list.d/wifi-firmware-autosetup.list) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( Use --no-repo to disable this behavior. The installer does not add third-party driver repositories or install drivers) Tj
+T*
+( from GitHub.) Tj
+T*
+() Tj
+T*
+( 6. Troubleshooting) Tj
+T*
+( No Wi-Fi adapter detected: Check BIOS/UEFI settings and whether the adapter is present. Try lspci -nnk) Tj
+T*
+( \(internal PCI/PCIe\) or lsusb \(USB\), if installed.) Tj
+T*
+( APT update or installation fails: Confirm Ethernet/tethering, check configured Debian repositories, and) Tj
+T*
+( ensure system date/time is correct.) Tj
+T*
+( Firmware installed but Wi-Fi is missing: Reboot, then check the adapter and whether it is blocked:) Tj
+T*
+() Tj
+T*
+(    ip link) Tj
+T*
+(    rfkill list wifi) Tj
+T*
+(    sudo dmesg | grep -iE "firmware|wifi|wlan" | tail -n 30) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(    Limitations: Some Broadcom and Realtek adapters need separate kernel drivers, newer kernels, or a different) Tj
+T*
+(    firmware package. USB adapters with generic descriptions may not be auto-detected. The script does not guarantee) Tj
+T*
+(    support for every card or automatically join a wireless network.) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(Wi-Fi Firmware | Debian / Raspberry Pi Desktop on Dell PC                                                              2/2) Tj
+T*
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 6 0 R >>
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000189 00000 n 
+0000002519 00000 n 
+0000002645 00000 n 
+0000005415 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+5541
+%%EOF

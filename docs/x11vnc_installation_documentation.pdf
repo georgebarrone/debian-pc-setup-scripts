@@ -1,0 +1,265 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+4 0 obj
+<< /Length 2150 >>
+stream
+BT
+/F1 8 Tf
+11 TL
+35 752 Td
+( x11vnc Service - Installation Guide) Tj
+T*
+( Share the currently logged-in X11 desktop on a Dell PC running Debian-based Raspberry Pi Desktop.) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( Overview) Tj
+T*
+( The install-x11vnc.sh script installs x11vnc and xauth, configures a VNC password, and creates a systemd) Tj
+T*
+( service named x11vnc-follow-session.service. The service starts at boot and waits for the active local X11) Tj
+T*
+( user session.) Tj
+T*
+() Tj
+T*
+( Unlike a virtual VNC desktop, this displays the same physical desktop that the logged-in user sees.) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( Requirements) Tj
+T*
+( Debian-based Raspberry Pi Desktop on a Dell/PC; an X11 graphical session; sudo/root permissions; network) Tj
+T*
+( access for installing packages. It does not require Raspberry Pi hardware.) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( 1. Install) Tj
+T*
+( Recommended - SSH tunnel mode: Only listens on 127.0.0.1 by default.) Tj
+T*
+() Tj
+T*
+(    sudo bash install-x11vnc.sh) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( Optional - direct local network mode: Listens on TCP port 5900 on network interfaces.) Tj
+T*
+() Tj
+T*
+(    sudo bash install-x11vnc.sh --lan) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( On the first run, you will be asked to set a VNC password. Traditional VNC authentication uses only the first 8) Tj
+T*
+( characters. Re-running the installer keeps the existing password unless you reset it.) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( 2. Connect to the desktop) Tj
+T*
+( Default secure mode: An SSH server must also be running on the Dell. On the remote computer, open a tunnel,) Tj
+T*
+( then point your VNC viewer at 127.0.0.1:5900.) Tj
+T*
+() Tj
+T*
+(    ssh -L 5900:127.0.0.1:5900 USER@DELL_IP) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( LAN mode: Find the Dell IP with hostname -I, then connect the viewer to DELL_IP:5900.) Tj
+T*
+() Tj
+T*
+(   Important: A user must be logged in to an active X11 desktop. The service will wait when no qualifying X11) Tj
+T*
+(   desktop is active; it does not share the login screen.) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(x11vnc | Debian / Raspberry Pi Desktop on Dell PC                                                                  1/2) Tj
+T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 4 0 R >>
+endobj
+6 0 obj
+<< /Length 2695 >>
+stream
+BT
+/F1 8 Tf
+11 TL
+35 752 Td
+( Operations & Troubleshooting) Tj
+T*
+( Useful commands and behavior for the installed systemd service.) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( 3. Manage the service) Tj
+T*
+() Tj
+T*
+(    sudo systemctl status x11vnc-follow-session) Tj
+T*
+(    sudo systemctl restart x11vnc-follow-session) Tj
+T*
+(    sudo systemctl stop x11vnc-follow-session) Tj
+T*
+(    sudo systemctl enable --now x11vnc-follow-session) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( Follow live diagnostic logs:) Tj
+T*
+() Tj
+T*
+(    sudo journalctl -u x11vnc-follow-session -f) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( 4. How active-session detection works) Tj
+T*
+( The helper checks loginctl about every 3 seconds and selects a local, active, user-class X11 session on) Tj
+T*
+( seat0. It identifies the X display and Xauthority credentials, starts x11vnc against that display, and restarts) Tj
+T*
+( x11vnc when the qualifying session changes. If no session qualifies, it waits.) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( 5. Files installed) Tj
+T*
+() Tj
+T*
+(  /etc/systemd/system/x11vnc-follow-session.service                    Systemd unit \(starts at boot\).) Tj
+T*
+() Tj
+T*
+(  /usr/local/sbin/x11vnc-follow-session                                Session-aware launcher.) Tj
+T*
+() Tj
+T*
+(  /etc/default/x11vnc-follow-session                                   Binding mode: local or lan.) Tj
+T*
+() Tj
+T*
+(  /etc/x11vnc.pass                                                     Password file \(root-only permissions\).) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( 6. Troubleshooting) Tj
+T*
+( VNC not connecting? Check that the GUI uses X11, that somebody is logged in locally, and that the service) Tj
+T*
+( logs show an active session:) Tj
+T*
+() Tj
+T*
+(    echo $XDG_SESSION_TYPE) Tj
+T*
+(    loginctl list-sessions) Tj
+T*
+(    sudo journalctl -u x11vnc-follow-session -n 40 --no-pager) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( If the first command reports wayland, choose an X11 session; x11vnc cannot share a native Wayland session. If) Tj
+T*
+( the service detects a session but cannot display it, inspect the logs for X display or Xauthority errors.) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+( 7. Security and configuration) Tj
+T*
+( By default, port 5900 is bound to localhost. To change modes, edit /etc/default/x11vnc-follow-session and) Tj
+T*
+( set X11VNC_BIND=local or X11VNC_BIND=lan, then restart the service.) Tj
+T*
+() Tj
+T*
+(   Security: Direct VNC traffic is not encrypted. Prefer the SSH tunnel; if using LAN mode, restrict port 5900 with a) Tj
+T*
+(   firewall and never expose it directly to the public internet.) Tj
+T*
+() Tj
+T*
+() Tj
+T*
+() Tj
+T*
+() Tj
+T*
+(x11vnc | Debian / Raspberry Pi Desktop on Dell PC                                                                       2/2) Tj
+T*
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 6 0 R >>
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000189 00000 n 
+0000002390 00000 n 
+0000002516 00000 n 
+0000005262 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+5388
+%%EOF
