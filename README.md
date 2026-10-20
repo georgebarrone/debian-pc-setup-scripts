@@ -61,6 +61,8 @@ Install with the **secure, localhost-only default**:
 sudo bash install-x11vnc.sh
 ```
 
+**Debian 11 (Bullseye):** If the normal APT update or dependency download fails with a recognized archived-repository error (such as an HTTP 404), the installer automatically backs up affected official Bullseye security source files, redirects those entries to Debian's security archive, refreshes indexes with a one-command expiry exception, and retries. It does not modify repositories on newer Debian releases. Debian 11 no longer receives regular security updates; upgrading is recommended.
+
 The installer prompts you to create a VNC password (classic VNC authentication uses only the first eight password characters). It sets up and enables `x11vnc-follow-session.service`, which remains running and watches for desktop login/session changes.
 
 Check its status or recent logs:
