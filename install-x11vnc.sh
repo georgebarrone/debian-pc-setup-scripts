@@ -19,8 +19,103 @@ if (( $# > 1 )); then
 fi
 
 export DEBIAN_FRONTEND=noninteractive
-apt-get update
-apt-get install -y x11vnc xauth
+
+# Debian 11 (Bullseye) reached end of regular security support in 2026.
+# Some Bullseye security mirrors still list packages that now return HTTP 404.
+# Only if normal APT operations fail with a repository/archive-related error:
+#   - back up affected official Debian source lists;
+#   - switch bullseye-security to Debian's archived security mirror;
+#   - refresh metadata with Valid-Until relaxed for THIS update command only;
+#   - retry installation once.
+# Do not change any sources for Debian 12/13+, or third-party repositories.
+is_bullseye() {
+    local VERSION_CODENAME='' VERSION_ID='' ID=''
+    if [[ -r /etc/os-release ]]; then
+        # shellcheck disable=SC1091
+        . /etc/os-release
+    fi
+    [[ "$VERSION_CODENAME" == bullseye || "$VERSION_ID" == 11 ]]
+}
+
+apt_log="$(mktemp)"
+trap 'rm -f "$apt_log"' EXIT
+
+apt_run() {
+    # Preserve the normal output while recording the error for targeted repair.
+    apt-get "$@" 2>&1 | tee "$apt_log"
+}
+
+apt_archive_error() {
+    grep -Eiq '404[[:space:]]+Not[[:space:]]+Found|Release file.*(expired|not valid)|does not have a Release file' "$apt_log"
+}
+
+repair_bullseye_security_sources() {
+    local file backup stamp changed=0 before tmp
+    stamp="$(date +%Y%m%d-%H%M%S)"
+    echo 'Debian 11 repository issue detected. Checking official Bullseye security sources...'
+    echo 'WARNING: Debian 11 is end-of-life; archived packages do NOT provide ongoing security updates.'
+    shopt -s nullglob
+    for file in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+        [[ -f "$file" ]] || continue
+        # Only touch active Debian Bullseye security entries, not third-party entries.
+        if [[ "$file" == *.sources ]]; then
+            grep -Eq '^[[:space:]]*Suites:[[:space:]]*.*bullseye-security([[:space:]]|$)' "$file" || continue
+            grep -Eq '^URIs:.*(deb.debian.org|security.debian.org)/debian-security' "$file" || continue
+            # A mixed-release deb822 file cannot be changed safely wholesale.
+            if grep -Eq '^[[:space:]]*Suites:.*(bookworm|trixie|forky|sid)' "$file"; then
+                echo "Skipping mixed-release source file: $file" >&2
+                continue
+            fi
+            tmp="$(mktemp)"
+            sed -E 's#https?://(deb.debian.org|security.debian.org)/debian-security#http://archive.debian.org/debian-security#g' "$file" > "$tmp"
+        else
+            grep -Eq '^[[:space:]]*deb(-src)?[[:space:]].*bullseye-security' "$file" || continue
+            tmp="$(mktemp)"
+            sed -E '/^[[:space:]]*deb(-src)?[[:space:]].*bullseye-security/s#https?://(deb.debian.org|security.debian.org)/debian-security#http://archive.debian.org/debian-security#g' "$file" > "$tmp"
+        fi
+        if ! cmp -s "$file" "$tmp"; then
+            backup="${file}.bak-x11vnc-${stamp}"
+            cp -p "$file" "$backup"
+            cat "$tmp" > "$file"
+            echo "Repaired $file (backup: $backup)"
+            changed=1
+        fi
+        rm -f "$tmp"
+    done
+    shopt -u nullglob
+    if (( changed == 0 )); then
+        echo 'No outdated official bullseye-security source URL needed changing.'
+    fi
+    return 0
+}
+
+retry_with_bullseye_archive() {
+    if ! is_bullseye || ! apt_archive_error; then
+        return 1
+    fi
+    repair_bullseye_security_sources
+    echo 'Refreshing Debian 11 archive metadata (temporary Valid-Until exception)...'
+    apt_run -o Acquire::Check-Valid-Until=false update || return 1
+    echo 'Retrying VNC dependencies...'
+    apt_run install -y x11vnc xauth
+}
+
+if apt_run update; then
+    if ! apt_run install -y x11vnc xauth; then
+        echo 'Initial VNC package installation failed.' >&2
+        retry_with_bullseye_archive || {
+            echo 'Installation failed. Inspect the APT messages above; no VNC service changes were made.' >&2
+            exit 1
+        }
+    fi
+else
+    echo 'Initial APT update failed.' >&2
+    retry_with_bullseye_archive || {
+        echo 'APT could not update; no VNC service changes were made.' >&2
+        exit 1
+    }
+fi
+
 
 # x11vnc prompts for a VNC password, but does not place it on the command line.
 PASSWORD_FILE=/etc/x11vnc.pass
