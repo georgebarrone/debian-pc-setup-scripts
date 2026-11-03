@@ -55,13 +55,15 @@ echo "$XDG_SESSION_TYPE"
 
 It must report `x11`. The installer uses `loginctl` to find the active local X11 session on `seat0`. It does not create a new virtual desktop or connect to a Wayland session.
 
-Install with the **secure, localhost-only default**:
+Install with the **direct LAN connection default**:
 
 ```bash
 sudo bash install-x11vnc.sh
 ```
 
 **Debian 11 (Bullseye):** If the normal APT update or dependency download fails with a recognized archived-repository error (such as an HTTP 404), the installer automatically backs up affected official Bullseye security source files, redirects those entries to Debian's security archive, refreshes indexes with a one-command expiry exception, and retries. It does not modify repositories on newer Debian releases. Debian 11 no longer receives regular security updates; upgrading is recommended.
+
+By default, the VNC server accepts connections to `DELL_IP:5900` (or just `DELL_IP` in most VNC viewers). VNC must have an active local X11 user session to share.
 
 The installer prompts you to create a VNC password (classic VNC authentication uses only the first eight password characters). It sets up and enables `x11vnc-follow-session.service`, which remains running and watches for desktop login/session changes.
 
@@ -72,9 +74,9 @@ sudo systemctl status x11vnc-follow-session
 sudo journalctl -u x11vnc-follow-session -f
 ```
 
-### Connect securely using an SSH tunnel (recommended)
+### Optional: SSH tunnel (more secure)
 
-You must already have an **SSH server** running on the Debian PC. From your *other computer*, create the tunnel:
+To switch a new installation back to localhost-only VNC, run `sudo bash install-x11vnc.sh --local` instead. You must already have an **SSH server** running on the Debian PC. From your *other computer*, create the tunnel:
 
 ```bash
 ssh -L 5900:localhost:5900 username@DELL_IP
@@ -82,13 +84,13 @@ ssh -L 5900:localhost:5900 username@DELL_IP
 
 Then connect a VNC viewer on that other computer to `127.0.0.1:5900` and enter the VNC password.
 
-### Optional: direct LAN access
+### Direct LAN access (default)
 
-```bash
-sudo bash install-x11vnc.sh --lan
-```
+Running `sudo bash install-x11vnc.sh` (or explicitly using `--lan`) configures the service to listen on TCP port **5900**, so a VNC viewer can connect using `DELL_IP` or `DELL_IP:5900`.
 
-This exposes VNC on TCP port **5900** to reachable network clients, so a viewer can connect to `DELL_IP:5900`. **Direct VNC traffic is not encrypted.** Only use this mode on a trusted, restricted LAN, protect port 5900 with a firewall, and never expose it to the public internet.
+**Direct VNC traffic is not encrypted.** Use it only on a trusted, restricted LAN, protect port 5900 with a firewall, and never expose it to the public internet. Prefer `--local` plus an SSH tunnel on untrusted networks.
+
+**Already installed?** The script update does not reconfigure existing devices automatically. Set `X11VNC_BIND=lan` in `/etc/default/x11vnc-follow-session` and run `sudo systemctl restart x11vnc-follow-session`, or rerun the updated installer.
 
 Documentation: [x11vnc installation PDF](docs/x11vnc_installation_documentation.pdf).
 
@@ -96,7 +98,7 @@ Documentation: [x11vnc installation PDF](docs/x11vnc_installation_documentation.
 
 **Wi-Fi adapter still missing:** Verify the adapter is enabled in BIOS/UEFI, rerun `--diagnose`, inspect `lspci -nnk` / `lsusb` (if available), and look at firmware errors with `sudo dmesg | grep -Ei 'wifi|wlan|firmware|iwlwifi|brcm|rtl|ath|mt76'`. Some cards require a different driver or kernel version.
 
-**VNC viewer cannot connect:** Confirm the GUI is running under **X11**, inspect the service logs, and check that a user is locally logged in. The default mode does **not** accept direct remote connections; use an SSH tunnel or deliberately choose `--lan`.
+**VNC viewer cannot connect:** Confirm the GUI is running under **X11**, inspect the service logs, and check that a user is locally logged in. The default is now direct LAN access. Check that `X11VNC_BIND=lan` is configured in `/etc/default/x11vnc-follow-session` and that TCP port 5900 is reachable. For encrypted tunneling, use `--local`.
 
 **No desktop session currently logged in:** The VNC service can be running while no desktop is shared. It connects when a supported active X11 session becomes available.
 
