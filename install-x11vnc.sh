@@ -4,17 +4,18 @@
 set -euo pipefail
 
 if [[ ${EUID} -ne 0 ]]; then
-    echo 'Run this script with sudo: sudo bash install-x11vnc.sh [--lan]' >&2
+    echo 'Run this script with sudo: sudo bash install-x11vnc.sh [--local]' >&2
     exit 1
 fi
 
 case "${1:-}" in
-    '')      BIND_MODE=local ;;
-    --lan)   BIND_MODE=lan ;;
-    *)       echo 'Usage: sudo bash install-x11vnc.sh [--lan]' >&2; exit 1 ;;
+    '')        BIND_MODE=lan ;;
+    --lan)     BIND_MODE=lan ;;
+    --local)   BIND_MODE=local ;;
+    *)         echo 'Usage: sudo bash install-x11vnc.sh [--local]' >&2; exit 1 ;;
 esac
 if (( $# > 1 )); then
-    echo 'Usage: sudo bash install-x11vnc.sh [--lan]' >&2
+    echo 'Usage: sudo bash install-x11vnc.sh [--local]' >&2
     exit 1
 fi
 
@@ -50,7 +51,7 @@ apt_archive_error() {
 }
 
 repair_bullseye_security_sources() {
-    local file backup stamp changed=0 before tmp
+    local file backup stamp changed=0 tmp
     stamp="$(date +%Y%m%d-%H%M%S)"
     echo 'Debian 11 repository issue detected. Checking official Bullseye security sources...'
     echo 'WARNING: Debian 11 is end-of-life; archived packages do NOT provide ongoing security updates.'
@@ -115,7 +116,6 @@ else
         exit 1
     }
 fi
-
 
 # x11vnc prompts for a VNC password, but does not place it on the command line.
 PASSWORD_FILE=/etc/x11vnc.pass
@@ -222,7 +222,7 @@ while true; do
             else
                 args+=(-auth guess -env FD_XDM=1)
             fi
-            if [[ "${X11VNC_BIND:-local}" != lan ]]; then
+            if [[ "${X11VNC_BIND:-lan}" != lan ]]; then
                 args+=(-localhost)
             fi
             /usr/bin/x11vnc "${args[@]}" &
@@ -271,8 +271,9 @@ echo "Connection mode: $BIND_MODE"
 echo 'Check: sudo systemctl status x11vnc-follow-session --no-pager'
 echo 'Logs:  sudo journalctl -u x11vnc-follow-session -f'
 if [[ "$BIND_MODE" == local ]]; then
-    echo 'Connect using SSH tunneling (see instructions). VNC listens on 127.0.0.1:5900.'
+    echo 'LOCAL MODE: Connect using SSH tunneling. VNC listens on 127.0.0.1:5900.'
 else
-    echo 'LAN MODE: VNC listens on TCP port 5900. Restrict access with your firewall.'
-    echo 'Do NOT expose port 5900 directly to the internet; plain VNC is not encrypted.'
+    echo 'LAN MODE (default): VNC listens on TCP port 5900 and accepts direct LAN connections.'
+    echo 'Connect your VNC viewer to DEVICE_IP or DEVICE_IP:5900.'
+    echo 'Restrict access with your firewall and do NOT expose port 5900 directly to the internet.'
 fi
