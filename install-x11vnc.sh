@@ -215,8 +215,10 @@ while true; do
         current_key="$key"
         if [[ -n "$key" ]]; then
             echo "Sharing active X11 session: user=$user session=$sid display=$display"
+            # Avoid MIT-SHM BadAccess / X_ShmAttach failures (seen on Debian Xorg VMs).
+            # -noshm can be slower, but uses the safer non-shared-memory capture path.
             args=(-display "$display" -rfbport 5900 -rfbauth "$PASSFILE"
-                  -forever -shared -repeat -noxdamage)
+                  -forever -shared -repeat -noxdamage -noshm)
             if [[ -n "$auth" ]]; then
                 args+=(-auth "$auth")
             else
