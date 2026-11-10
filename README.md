@@ -100,6 +100,9 @@ Running `sudo bash install-x11vnc.sh` (or explicitly using `--lan`) configures t
 
 Documentation: [x11vnc installation PDF](docs/x11vnc_installation_documentation.pdf).
 
+
+**X11 virtual-machine compatibility:** The bundled x11vnc launcher uses `-noshm` to avoid `MIT-SHM` / `X_ShmAttach` `BadAccess` crashes that can prevent port 5900 from remaining open. This can reduce screen-capture performance slightly. Existing installations must rerun the updated x11vnc installer (or patch the installed service runner) to receive this fix.
+
 ## Common checks and troubleshooting
 
 **No Wi-Fi adapter detected:** The firmware script reports that no identifiable wireless hardware is present and exits successfully without modifying packages. If a supported adapter exists, running it again is generally safe: Debian APT avoids unnecessary package reinstalls. Missing internet or unsupported firmware can still cause actual installation failures.
