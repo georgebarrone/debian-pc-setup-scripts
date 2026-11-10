@@ -67,12 +67,18 @@ By default, the VNC server accepts connections to `DELL_IP:5900` (or just `DELL_
 
 The installer prompts you to create a VNC password (classic VNC authentication uses only the first eight password characters). It sets up and enables `x11vnc-follow-session.service`, which remains running and watches for desktop login/session changes.
 
-Check its status or recent logs:
+The installer automatically checks whether the service is running and TCP port 5900 is listening. You do **not** have to run separate `systemctl status` or `ss` commands after installation.
+
+It also installs a short helper command:
 
 ```bash
-sudo systemctl status x11vnc-follow-session
-sudo journalctl -u x11vnc-follow-session -f
+vnc              # show service state, port readiness, and connection IP
+sudo vnc start   # enable and start the service (normally not needed)
+sudo vnc restart # restart if needed
+sudo vnc logs    # recent service logs
 ```
+
+The service is enabled at boot. A local **X11 user must be logged in** before the VNC listener can become ready. On a VM using NAT, direct host access may require VirtualBox port forwarding.
 
 ### Optional: SSH tunnel (more secure)
 
@@ -95,6 +101,8 @@ Running `sudo bash install-x11vnc.sh` (or explicitly using `--lan`) configures t
 Documentation: [x11vnc installation PDF](docs/x11vnc_installation_documentation.pdf).
 
 ## Common checks and troubleshooting
+
+**No Wi-Fi adapter detected:** The firmware script reports that no identifiable wireless hardware is present and exits successfully without modifying packages. If a supported adapter exists, running it again is generally safe: Debian APT avoids unnecessary package reinstalls. Missing internet or unsupported firmware can still cause actual installation failures.
 
 **Wi-Fi adapter still missing:** Verify the adapter is enabled in BIOS/UEFI, rerun `--diagnose`, inspect `lspci -nnk` / `lsusb` (if available), and look at firmware errors with `sudo dmesg | grep -Ei 'wifi|wlan|firmware|iwlwifi|brcm|rtl|ath|mt76'`. Some cards require a different driver or kernel version.
 
