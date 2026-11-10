@@ -261,6 +261,74 @@ KillMode=control-group
 WantedBy=multi-user.target
 UNIT
 
+# Simple on-device command for checking and controlling VNC.
+# The service itself starts automatically at boot, and only serves X11 after login.
+cat > /usr/local/bin/vnc <<'VNC_HELPER'
+#!/usr/bin/env bash
+set -euo pipefail
+SERVICE=x11vnc-follow-session.service
+ACTION="${1:-status}"
+if (( $# > 1 )); then
+  echo "Usage: vnc [status|start|restart|stop|logs]" >&2
+  exit 2
+fi
+case "$ACTION" in
+  status)
+    if ! systemctl is-active --quiet "$SERVICE"; then
+      echo "VNC service: NOT running. Start with: sudo vnc start"
+      exit 1
+    fi
+    echo "VNC service: running (auto-starts at boot)"
+    if ! command -v ss >/dev/null 2>&1; then
+      echo "Unable to check port 5900: 'ss' is not installed."
+      exit 1
+    fi
+    LISTENERS="$(ss -H -ltn 'sport = :5900' 2>/dev/null || true)"
+    if [[ -z "$LISTENERS" ]]; then
+      echo "VNC port 5900: not listening yet."
+      echo "Log into the physical X11 desktop; this service waits for a local X11 user session."
+      echo "If already logged in, inspect: sudo vnc logs"
+      exit 1
+    fi
+    echo "VNC port 5900: listening."
+    MODE="$(sed -n 's/^X11VNC_BIND=//p' /etc/default/x11vnc-follow-session 2>/dev/null | head -n 1)"
+    if [[ "$MODE" == local ]]; then
+      echo "Mode: localhost only. Connect through an SSH tunnel to 127.0.0.1:5900."
+    else
+      IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
+      if [[ -n "$IP" ]]; then
+        echo "Mode: direct LAN. VNC Viewer address: $IP:5900"
+      else
+        echo "Mode: direct LAN, but no non-loopback IP address was found."
+      fi
+      echo "Use only on a trusted, restricted LAN. VM NAT needs port forwarding."
+    fi
+    ;;
+  start|restart|stop)
+    if (( EUID != 0 )); then
+      echo "Run: sudo vnc $ACTION" >&2
+      exit 1
+    fi
+    if [[ "$ACTION" == start ]]; then
+      systemctl enable --now "$SERVICE"
+    else
+      systemctl "$ACTION" "$SERVICE"
+    fi
+    if [[ "$ACTION" != stop ]]; then
+      "$0" status || true
+    fi
+    ;;
+  logs)
+    journalctl -u "$SERVICE" -n 40 --no-pager
+    ;;
+  *)
+    echo "Usage: vnc [status|start|restart|stop|logs]" >&2
+    exit 2
+    ;;
+esac
+VNC_HELPER
+chmod 755 /usr/local/bin/vnc
+
 systemctl daemon-reload
 systemctl enable --now x11vnc-follow-session.service
 systemctl restart x11vnc-follow-session.service
@@ -268,8 +336,12 @@ systemctl restart x11vnc-follow-session.service
 echo
 echo 'Installed x11vnc-follow-session.service'
 echo "Connection mode: $BIND_MODE"
-echo 'Check: sudo systemctl status x11vnc-follow-session --no-pager'
-echo 'Logs:  sudo journalctl -u x11vnc-follow-session -f'
+echo 'Quick commands: vnc status | sudo vnc restart | sudo vnc start | sudo vnc logs'
+echo 'Automatically checking the VNC service and listening port...'
+if ! /usr/local/bin/vnc status; then
+    echo 'NOTE: VNC is installed and enabled, but the listener is not ready yet.'
+    echo 'A local X11 user login may be required; check the logs with: sudo vnc logs'
+fi
 if [[ "$BIND_MODE" == local ]]; then
     echo 'LOCAL MODE: Connect using SSH tunneling. VNC listens on 127.0.0.1:5900.'
 else
