@@ -151,7 +151,11 @@ if [[ "$MODE" == diagnose ]]; then
     exit 0
 fi
 if (( ${#chosen[@]} == 0 )); then
-    warn 'No reliable firmware package match. Nothing was installed.'
+    if (( ${#detected[@]} == 0 )); then
+        log 'No identifiable Wi-Fi hardware; firmware step safely skipped.'
+        exit 0
+    fi
+    warn 'Detected Wi-Fi hardware, but no reliable firmware package match. Nothing was installed.'
     exit 2
 fi
 
